@@ -1,0 +1,59 @@
+{{- if .Values.volumes.database.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "filebrowser-quantum.fullname" . }}-db
+  labels:
+    {{- include "filebrowser-quantum.labels" . | nindent 4 }}
+spec:
+{{- if .Values.volumes.database.storageClassName }}
+  storageClassName:  {{ .Values.volumes.database.storageClassName }}
+{{- end }}
+  accessModes:
+    - {{ .Values.volumes.database.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.volumes.database.size }}
+{{- end }}
+
+{{- if .Values.volumes.cache.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "filebrowser-quantum.fullname" . }}-cache
+  labels:
+    {{- include "filebrowser-quantum.labels" . | nindent 4 }}
+spec:
+{{- if .Values.volumes.cache.storageClassName }}
+  storageClassName:  {{ .Values.volumes.cache.storageClassName }}
+{{- end }}
+  accessModes:
+    - {{ .Values.volumes.cache.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.volumes.cache.size }}
+{{- end }}
+
+
+{{- range $key, $values := .Values.dataVolumes }}
+{{- if $values.create }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $values.claimName }}
+  labels:
+    {{- include "filebrowser-quantum.labels" $ | nindent 4 }}
+spec:
+{{- if $values.storageClassName }}
+  storageClassName:  {{ $values.storageClassName }}
+{{- end }}
+  accessModes:
+    - {{ $values.accessMode }}
+  resources:
+    requests:
+      storage: {{ $values.size }}
+{{- end }}
+{{- end }}

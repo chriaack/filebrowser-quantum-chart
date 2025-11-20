@@ -1,0 +1,200 @@
+suite: Basic Volumes - configMap
+templates:
+  - configmap.yaml
+
+tests:
+  - it: should render database path when database volume is enabled
+    set:
+      config:
+        auth:
+          adminPassword: "12345678"
+      volumes:
+        database:
+          enabled: true
+        cache:
+          enabled: false
+    asserts:
+      - matchRegex:
+          path: data['config.yaml']
+          pattern: 'database: "/home/filebrowser/db/database.db"'
+      - notMatchRegex:
+          path: data['config.yaml']
+          pattern: 'cacheDir: "/mnt/tmp"'
+
+  - it: should render cacheDir and maxArchiveSize when cache volume is enabled
+    set:
+      config:
+        auth:
+          adminPassword: "12345678"
+      volumes:
+        database:
+          enabled: false
+        cache:
+          enabled: true
+          maxArchiveSizeGB: 10
+    asserts:
+      - matchRegex:
+          path: data['config.yaml']
+          pattern: 'cacheDir: "/mnt/tmp"'
+      - matchRegex:
+          path: data['config.yaml']
+          pattern: 'maxArchiveSize: 10'
+      - notMatchRegex:
+          path: data['config.yaml']
+          pattern: 'database: "/home/filebrowser/db/database.db"'
+
+  - it: should render both database and cache when both enabled
+    set:
+      config:
+        auth:
+          adminPassword: "12345678"
+      volumes:
+        database:
+          enabled: true
+        cache:
+          enabled: true
+          maxArchiveSizeGB: 5
+    asserts:
+      - matchRegex:
+          path: data['config.yaml']
+          pattern: 'database: "/home/filebrowser/db/database.db"'
+      - matchRegex:
+          path: data['config.yaml']
+          pattern: 'cacheDir: "/mnt/tmp"'
+      - matchRegex:
+          path: data['config.yaml']
+          pattern: 'maxArchiveSize: 5'
+
+  - it: should render neither database nor cache when both disabled
+    set:
+      config:
+        auth:
+          adminPassword: "12345678"
+      volumes:
+        database:
+          enabled: false
+        cache:
+          enabled: false
+    asserts:
+      - notMatchRegex:
+          path: data['config.yaml']
+          pattern: 'database: "/home/filebrowser/db/database.db"'
+      - notMatchRegex:
+          path: data['config.yaml']
+          pattern: 'cacheDir: "/mnt/tmp"'
+      - notMatchRegex:
+          path: data['config.yaml']
+          pattern: 'maxArchiveSize:'
+---
+suite: Basic Volumes - volumeMounts
+templates:
+  - deployment.yaml
+
+tests:
+  - it: should render ONLY the database volume and volumeMount
+    set:
+      config:
+        auth:
+          adminPassword: "12345678"
+      volumes:
+        database:
+          enabled: true
+        cache:
+          enabled: false
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[1].name
+          value: database
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[1].mountPath
+          value: /home/filebrowser/db/
+      - equal:
+          path: spec.template.spec.volumes[1].name
+          value: database
+      - equal:
+          path: spec.template.spec.volumes[1].persistentVolumeClaim.claimName
+          value: RELEASE-NAME-filebrowser-quantum-db
+      - notExists:
+          path: spec.template.spec.containers[0].volumeMounts[2]
+      - notExists:
+          path: spec.template.spec.volumes[2]
+
+  - it: should render ONLY the cache volume and volumeMount
+    set:
+      config:
+        auth:
+          adminPassword: "12345678"
+      volumes:
+        database:
+          enabled: false
+        cache:
+          enabled: true
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[1].name
+          value: cache
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[1].mountPath
+          value: /mnt/tmp
+      - equal:
+          path: spec.template.spec.volumes[1].name
+          value: cache
+      - equal:
+          path: spec.template.spec.volumes[1].persistentVolumeClaim.claimName
+          value: RELEASE-NAME-filebrowser-quantum-cache
+      - notExists:
+          path: spec.template.spec.containers[0].volumeMounts[2]
+      - notExists:
+          path: spec.template.spec.volumes[2]
+
+  - it: should render BOTH database and cache volumes
+    set:
+      config:
+        auth:
+          adminPassword: "12345678"
+      volumes:
+        database:
+          enabled: true
+        cache:
+          enabled: true
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[1].name
+          value: database
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[1].mountPath
+          value: /home/filebrowser/db/
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[2].name
+          value: cache
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[2].mountPath
+          value: /mnt/tmp
+      - equal:
+          path: spec.template.spec.volumes[1].name
+          value: database
+      - equal:
+          path: spec.template.spec.volumes[1].persistentVolumeClaim.claimName
+          value: RELEASE-NAME-filebrowser-quantum-db
+      - equal:
+          path: spec.template.spec.volumes[2].name
+          value: cache
+      - equal:
+          path: spec.template.spec.volumes[2].persistentVolumeClaim.claimName
+          value: RELEASE-NAME-filebrowser-quantum-cache
+
+  - it: should not render volumes or mounts when disabled
+    set:
+      config:
+        auth:
+          adminPassword: "12345678"
+      volumes:
+        database:
+          enabled: false
+        cache:
+          enabled: false
+    asserts:
+      - notExists:
+          path: spec.template.spec.containers[0].volumeMounts[1]
+      - notExists:
+          path: spec.template.spec.volumes[1]

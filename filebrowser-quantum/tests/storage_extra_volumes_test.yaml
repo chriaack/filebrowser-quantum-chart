@@ -1,0 +1,123 @@
+
+suite: extra volumeMounts - deployment
+templates:
+  - deployment.yaml
+tests:
+  - it: render data volume
+    set:
+      config:
+        auth:
+          adminPassword: "12345678"
+      dataVolumes:
+        data:
+          create: false
+          claimName: test
+          mountPath: /mnt/data
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[1].name
+          value: data 
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[1].mountPath
+          value: /mnt/data
+      - equal:
+          path: spec.template.spec.volumes[1].name
+          value: data
+      - notExists:
+          path: spec.template.spec.containers[0].volumeMounts[2]
+      - notExists:
+          path: spec.template.spec.volumes[2]
+      - equal:
+          path: "spec.template.spec.volumes[1].persistentVolumeClaim.claimName"
+          value: test
+---
+suite: extra volumeMounts - pvc
+templates:
+  - pvc.yaml
+tests:
+  - it: do not render data volume
+    set:
+      dataVolumes:
+        data:
+          create: false 
+          claimName: test
+          mountPath: /mnt/data
+    asserts:
+      - notExists:
+          path: "metadata.name"
+  - it: render data volume
+    set:
+      dataVolumes:
+        data:
+          create: true 
+          claimName: test
+          mountPath: /mnt/data
+          size: 5Gb
+          accessMode: rwm
+    asserts:
+      - equal:
+          path: "metadata.name"
+          value: test
+
+---
+suite: extra volumeMounts - configMap
+templates:
+  - configmap.yaml
+tests:
+  - it: simle config 
+    set:
+      dataVolumes:
+        data:
+          create: false 
+          claimName: test
+          mountPath: /mnt/data
+          config:
+            denyByDefault: false              # deny access unless an "allow" access rule was specifically created.
+            private: false                    # designate as source as private -- currently just means no sharing permitted.
+            disabled: false                   # disable the source, this is useful so you don't need to remove it from the config file
+            indexingIntervalMinutes: 0        # optional manual overide interval in minutes to re-index the source
+            disableIndexing: false            # disable the indexing of this source
+            conditionals:                     # conditional rules to apply when indexing to include/exclude certain items
+              ignoreHidden: false             # exclude hidden files and folders.
+              ignoreZeroSizeFolders: false    # ignore folders with 0 size
+              rules:                          # list of item rules to apply to specific paths
+                neverWatchPath: ""          # index the folder in the first pass to get included in search, but never re-indexed.
+                includeRootItem: ""         # include only these items at root folder level
+                fileStartsWith: ""          # (global) exclude files that start with these prefixes. Eg. "archive-" or "backup-"
+                folderStartsWith: ""        # (global) exclude folders that start with these prefixes. Eg. "archive-" or "backup-"
+                fileEndsWith: ""            # (global) exclude files that end with these suffixes. Eg. ".jpg" or ".txt"
+                folderEndsWith: ""          # (global) exclude folders that end with these suffixes. Eg. ".thumbnails" or ".git"
+                folderPath: ""              # (global) exclude folders that match this path. Eg. "/path/to/folder" or "/path/to/folder/subfolder"
+                filePath: d                # (global) exclude files that match this path. Eg. "/path/to/file.txt" or "/path/to/file.txt/subfile.txt"
+                folderName: ""              # (global) exclude folders that match these names. Eg. "folder" or "subfolder"
+                viewable: false             # Enable viewing in UI but exclude from indexing
+            defaultUserScope: "/"             # default "/" should match folders under path
+            defaultEnabled: true              # should be added as a default source for new users?
+            createUserDir: false
+    asserts:
+      - matchRegex:
+          path: data['config.yaml']
+          pattern: 'sources:'
+      - matchRegex:
+          path: data['config.yaml']
+          pattern: 'name: data'
+      - matchRegex:
+          path: data['config.yaml']
+          pattern: 'path: /mnt/data'
+      - matchRegex: 
+          path: data['config.yaml']
+          pattern: 'folderName: ""'
+      - matchRegex: 
+          path: data['config.yaml']
+          pattern: 'fileName: ""'
+      - matchRegex: 
+          path: data['config.yaml']
+          pattern: 'filePath: "d"'
+
+  - it: have at least one source
+    set:
+      dataVolumes: {}
+    asserts:
+      - matchRegex:
+          path: data['config.yaml']
+          pattern: 'sources:'

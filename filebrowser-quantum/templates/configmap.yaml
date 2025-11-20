@@ -1,0 +1,123 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "filebrowser-quantum.fullname" . }}-config
+  labels:
+    {{- include "filebrowser-quantum.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+{{ if .Values.config.customConfig }}
+{{ .Values.config.customConfig | indent 4 }}
+{{ else }}
+    server:
+      minSearchLength: {{ .Values.config.minSearchLength }}                      # minimum length of search query to begin searching (default: 3)
+      disableUpdateCheck: {{ .Values.config.disableUpdateCheck }}               # disables backend update check service
+      numImageProcessors: {{ .Values.config.numImageProcessors }}                   # number of concurrent image processing jobs used to create previews, default is number of cpu cores available.
+    {{- if .Values.config.socket }}
+      socket: {{ .Values.config.socket }}
+    {{- end }}
+    {{- if .Values.config.tlsKey }}
+      tlsKey: {{ .Values.config.tlsKey }}
+    {{- end }}
+    {{- if .Values.config.tlsCert }}
+      tlsCert: {{ .Values.config.tlsCert }}
+    {{- end }}
+      disablePreviews: {{ .Values.config.disablePreviews }}     # disable all previews thumbnails, simple icons will be used
+      disablePreviewResize: {{ .Values.config.disablePreviewResize }}     # disable resizing of previews for faster loading over slow connections
+      disableTypeDetectionByHeader: {{ .Values.config.disableTypeDetectionByHeader }}     # disable type detection by header, useful if filesystem is slow.
+      port: {{ .Values.service.port}}                                # port to listen on
+      baseURL: {{ .Values.config.baseURL }}                          # base URL for the server, the subpath that the server is running on.
+      logging:
+        - levels: {{ .Values.config.logging.levels }}                         # separated list of log levels to enable. (eg. "info|warning|error|debug")
+          apiLevels: {{ .Values.config.logging.apiLevels }}                       # separated list of log levels to enable for the API. (eg. "info|warning|error")
+          output: {{ .Values.config.logging.output }}                    # output location. (eg. "stdout" or "path/to/file.log")
+          noColors: {{ .Values.config.logging.noColors }}                     # disable colors in the output
+          json: {{ .Values.config.logging.json }}                         # output in json format
+          utc: {{ .Values.config.logging.utc }}                          # use UTC time in the output instead of local time
+    {{- if .Values.volumes.database.enabled }}
+      database: "/home/filebrowser/db/database.db"                 # path to the database file
+    {{- end }}
+    {{- if .Values.dataVolumes }}
+      sources:                                #  validate:required,dive
+        {{- range $key, $values := .Values.dataVolumes }}
+        - path: {{ $values.mountPath}}                           # file system path. (Can be relative)  validate:required
+          name: {{ $key }}                     # display name
+          config:
+            denyByDefault: {{ (($values.config).denyByDefault) | default false }}              # deny access unless an "allow" access rule was specifically created.
+            private: {{ (($values.config).private) | default false }}                    # designate as source as private -- currently just means no sharing permitted.
+            disabled: {{ (($values.config).disabled) | default false }}                   # disable the source, this is useful so you don't need to remove it from the config file
+            indexingIntervalMinutes: {{ (($values.config).indexingIntervalMinutes) | default 0 }}        # optional manual overide interval in minutes to re-index the source
+            disableIndexing: {{ (($values.config).disableIndexing) | default false }}            # disable the indexing of this source
+            conditionals:                     # conditional rules to apply when indexing to include/exclude certain items
+              ignoreHidden: {{ ((($values.config).conditionals).ignoreHidden) | default false }}             # exclude hidden files and folders.
+              ignoreZeroSizeFolders: {{ ((($values.config).conditionals).ignoreZeroSizeFolders) | default false }}    # ignore folders with 0 size
+              rules:                          # list of item rules to apply to specific paths
+                - neverWatchPath: {{ (((($values.config).conditionals).rules).neverWatchPath) | default "" | quote }}          # index the folder in the first pass to get included in search, but never re-indexed.
+                  includeRootItem: {{ (((($values.config).conditionals).rules).includeRootItem) | default "" | quote }}         # include only these items at root folder level
+                  fileStartsWith: {{ (((($values.config).conditionals).rules).fileStartsWith) | default "" | quote }}          # (global) exclude files that start with these prefixes. Eg. "archive-" or "backup-"
+                  folderStartsWith: {{ (((($values.config).conditionals).rules).folderStartsWith) | default "" | quote }}        # (global) exclude folders that start with these prefixes. Eg. "archive-" or "backup-"
+                  fileEndsWith: {{ (((($values.config).conditionals).rules).fileEndsWith) | default "" | quote }}            # (global) exclude files that end with these suffixes. Eg. ".jpg" or ".txt"
+                  folderEndsWith: {{ (((($values.config).conditionals).rules).folderEndsWith) | default "" | quote }}          # (global) exclude folders that end with these suffixes. Eg. ".thumbnails" or ".git"
+                  folderPath: {{ (((($values.config).conditionals).rules).folderPath) | default "" | quote }}              # (global) exclude folders that match this path. Eg. "/path/to/folder" or "/path/to/folder/subfolder"
+                  filePath: {{ (((($values.config).conditionals).rules).filePath) | default "" | quote }}                # (global) exclude files that match this path. Eg. "/path/to/file.txt" or "/path/to/file.txt/subfile.txt"
+                  fileName: {{ (((($values.config).conditionals).rules).fileName) | default "" | quote }}                # (global) exclude files that match these names. Eg. "file.txt" or "test.csv"
+                  folderName: {{ (((($values.config).conditionals).rules).folderName) | default "" | quote }}              # (global) exclude folders that match these names. Eg. "folder" or "subfolder"
+                  viewable: {{ (((($values.config).conditionals).rules).viewable) | default false }}             # Enable viewing in UI but exclude from indexing
+            defaultUserScope: {{ (($values.config).defaultUserScope) | default "/" | quote }}             # default "/" should match folders under path
+            defaultEnabled: {{ (($values.config).defaultEnabled) | default true }}              # should be added as a default source for new users?
+            createUserDir: {{ (($values.config).createUserDir) | default false }}
+        {{- end }}
+    {{- else }}
+      sources:
+        - path: "/srv"
+    {{- end }}
+    {{- if .Values.ingress.enabled }}
+      externalUrl: "https://{{ .Values.ingress.host }}"                         # used by share links if set (eg. http://mydomain.com)
+    {{- end }}
+    {{- if .Values.volumes.cache.enabled }}
+      cacheDir: "/mnt/tmp"                         # path to the cache directory, used for thumbnails and other cached files
+      maxArchiveSize: {{ .Values.volumes.cache.maxArchiveSizeGB }}                      # max pre-archive combined size of files/folder that are allowed to be archived (in GB)
+    {{- end }}
+      filesystem:                             # filesystem settings
+        createFilePermission: {{ .Values.config.filesystem.createFilePermission }}           # Unix permissions like 644, 755, 2755 (default: 644)  validate:required,file_permission
+        createDirectoryPermission: {{ .Values.config.filesystem.createDirectoryPermission }}      # Unix permissions like 755, 2755, 1777 (default: 755)  validate:required,file_permission
+    auth:
+      tokenExpirationHours: {{ .Values.config.auth.tokenExpirationHours }}                 # time in hours each web UI session token is valid for. Default is 2 hours.
+      methods:
+      {{- if .Values.config.auth.methods.proxy.enabled }}
+        proxy:                                #  validate:omitempty
+          enabled: {{ .Values.config.auth.methods.proxy.enabled }}
+          createUser: {{ .Values.config.auth.methods.proxy.createUser }}                  # create user if not exists
+          header: {{ .Values.config.auth.methods.proxy.header }}                          # required header to use for authentication. Security Warning: FileBrowser blindly accepts the header value as username.
+          logoutRedirectUrl: {{ .Values.config.auth.methods.proxy.logoutRedirectUrl }}               # if provider logout url is provided, filebrowser will also redirect to logout url. Custom logout query params are respected.
+      {{- end }}
+      {{- if .Values.config.auth.methods.noauth }}
+        noauth: {{ .Values.config.auth.methods.noauth }}                         # if set to true, overrides all other auth methods and disables authentication
+      {{- end }}
+      {{- if hasKey .Values.config.auth.methods "password"  }}
+        password:                             #  validate:omitempty
+          enabled: {{ .Values.config.auth.methods.password.enabled }}
+          minLength: {{ .Values.config.auth.methods.password.minLength }}                        # minimum pasword length required, default is 5.  validate:omitempty
+          signup: {{ .Values.config.auth.methods.password.signup }}                       # allow signups on login page if enabled -- not secure.  validate:omitempty
+        {{- if .Values.config.auth.methods.password.recaptcha.host }}
+          recaptcha:                          # recaptcha config, only used if signup is enabled  validate:omitempty
+            host: {{ .Values.config.auth.methods.password.recaptcha.host }}                          #  validate:required
+            key: {{ .Values.config.auth.methods.password.recaptcha.key }}                              #  validate:required
+            secret: {{ .Values.config.auth.methods.password.recaptcha.secret }}                           #  validate:required
+        {{- end }}
+          enforcedOtp: {{ .Values.config.auth.methods.password.enforcedOtp }}                    # if set to true, TOTP is enforced for all password users users. Otherwise, users can choose to enable TOTP.
+      {{- end }}
+      {{- if .Values.config.auth.methods.oidc.enabled }}
+        oidc:                                 #  validate:omitempty
+          enabled: {{ .Values.config.auth.methods.oidc.enabled }}                      # whether to enable OIDC authentication
+          issuerUrl: {{ .Values.config.auth.methods.oidc.issuerUrl }}                            # authorization URL of the OIDC provider
+          scopes: {{ .Values.config.auth.methods.oidc.scopes }}      # scopes to request from the OIDC provider
+          userIdentifier: {{ .Values.config.auth.methods.oidc.userIdentifier }} # the field value to use as the username. Default is "preferred_username", can also be "email" or "username", or "phone"
+          disableVerifyTLS: {{ .Values.config.auth.methods.oidc.disableVerifyTLS }}             # disable TLS verification for the OIDC provider. This is insecure and should only be used for testing.
+          logoutRedirectUrl: {{ .Values.config.auth.methods.oidc.logoutRedirectUrl }}              # if provider logout url is provided, filebrowser will also redirect to logout url. Custom logout query params are respected.
+          createUser: {{ .Values.config.auth.methods.oidc.createUser }}                   # create user if not exists
+          adminGroup: {{ .Values.config.auth.methods.oidc.adminGroup }}                      # if set, users in this group will be granted admin privileges.
+          groupsClaim: {{ .Values.config.auth.methods.oidc.groupsClaim }}               # the JSON field name to read groups from. Default is "groups"
+      {{- end }}
+      adminUsername: {{ .Values.config.auth.adminUsername }}                  # secret: the username of the admin user. If not set, the default is "admin".
+{{- end }}

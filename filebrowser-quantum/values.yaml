@@ -1,0 +1,185 @@
+replicaCount: 1 # do not change it filebrowser does not support scaling so far
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: gtstef/filebrowser
+  tag: 1.0.3-stable
+  pullPolicy: IfNotPresent
+
+resources: {}
+
+securityContext:
+  enabled: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  allowPrivilegeEscalation: false
+  runAsNonRoot: true
+  readOnlyRootFilesystem: true
+
+ingress:
+  enabled: false
+  tls: false
+  host: ""
+  ingressClassName: ""
+  annotations: {}
+
+service:
+  port: 80
+
+volumes:
+  database:
+    enabled: false
+    storageClassName: ""
+    size: ""
+    accessMode: "ReadWriteOnce"
+  cache:
+    enabled: false
+    storageClassName: ""
+    size: ""
+    maxArchiveSizeGB: ""
+    accessMode: "ReadWriteOnce"
+
+dataVolumes: {}
+
+config:
+### Example
+#  customConfig: |
+#  server:
+#    port: 80
+#    sources:
+#      - path: "/data"
+#        config:
+#          defaultEnabled: true
+#
+#  auth:
+#    adminUsername: admin
+#    methods:
+#      password:
+#        enabled: true
+#        minLength: 4
+#
+#  frontend:
+#  name: "My FileBrowser"
+###
+  customConfig: {}
+
+  minSearchLength: 3
+  disableUpdateCheck: true
+  numImageProcessors: 4
+  socket: ""
+  tlsKey: ""
+  tlsCert: ""
+  disablePreviews: false
+  disablePreviewResize: false
+  disableTypeDetectionByHeader: false
+  baseURL: "/"
+  logging:
+    levels: "info"
+    apiLevels: "info"
+    output: "stdout"
+    noColors: true
+    json: false
+    utc: false
+  filesystem:
+    createFilePermission: "644"
+    createDirectoryPermission: "755"
+  auth:
+    tokenExpirationHours: 2
+    methods:
+      proxy: 
+        enabled: false
+        createUser: false
+        header: ""
+        logoutRedirectUrl: ""
+      noauth: false
+      password:
+        enabled: true
+        minLength: 5
+        signup: false
+        recaptcha:
+          host: ""
+          recaptchaSecretName: "" 
+          key: ""
+          secret: ""
+        enforcedOtp: false
+      oidc: 
+        enabled: false
+        clientId: ""
+        clientSecret: ""
+        clientSecretName: ""
+        issuerUrl: ""
+        scopes: "openid email profile"
+        userIdentifier: "preferred_username"
+        disableVerifyTLS: false
+        logoutRedirectUrl: ""
+        createUser: false
+        adminGroup: ""
+        groupsClaim: "groups"
+    key: ""
+    adminUsername: "admin"
+    adminPassword: ""
+    adminPasswordSecretName: ""
+    totpSecret: ""
+  userDefaults:
+    editorQuickSave: false
+    hideSidebarFileActions: false
+    disableQuickToggles: false
+    disableSearchOptions: false
+    stickySidebar: false
+    darkMode: true
+    locale: "en"
+    viewMode: "normal"
+    singleClick: false
+    showHidden: false
+    dateFormat: false
+    gallerySize: 3
+    themeColor: "var(--blue)"
+    quickDownload: false
+    disablePreviewExt: ""
+    disableViewingExt: ""
+    lockPassword: false
+    disableSettings: false
+    preview:
+      disableHideSidebar: false
+      highQuality: false
+      image: false
+      video: false
+      motionVideoPreview: false
+      office: false
+      popup: false
+      autoplayMedia: false
+      defaultMediaPlayer: false
+      folder: false
+    permissions:
+      api: false
+      admin: false
+      modify: false
+      share: false
+      realtime: false
+      delete: false
+      create: false
+      download: false
+    loginMethod: "password"
+    disableUpdateNotifications: false
+    deleteWithoutConfirming: false
+    fileLoading:
+      maxConcurrentUpload: 10
+      uploadChunkSizeMb: 10
+      clearAll: false
+    disableOnlyOfficeExt: ".md .txt .pdf"
+    customTheme: ""
+    showSelectMultiple: false
+    debugOffice: false
+    defaultLandingPage: ""
+
+onlyoffice:
+  active: false
+  secret: ""
+  secretname: ""
+
+# todo frontend
+# todo integrations
+# todo onlyOffice Sub chart

@@ -1,0 +1,141 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "filebrowser-quantum.fullname" . }}
+  labels:
+    {{- include "filebrowser-quantum.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "filebrowser-quantum.labels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "filebrowser-quantum.labels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ .Values.config | toYaml | sha256sum }}
+    spec:
+      {{- if .Values.securityContext.enabled }}
+      securityContext:
+        fsGroup: {{ .Values.securityContext.fsGroup }}
+        runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
+      {{- end }}
+      containers:
+        - name: filebrowser
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.securityContext.enabled }}
+          {{- if .Values.resources }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          securityContext:
+            {{- with .Values.securityContext }}
+            runAsUser: {{ .runAsUser }}
+            runAsGroup: {{ .runAsGroup }}
+            allowPrivilegeEscalation: {{ .allowPrivilegeEscalation }}
+            runAsNonRoot: {{ .runAsNonRoot }}
+            readOnlyRootFilesystem: {{ .readOnlyRootFilesystem }}
+            {{- end }}
+          {{- end }}
+          env:
+            - name: FILEBROWSER_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                {{- if .Values.config.auth.adminPasswordSecretName }}
+                  name: {{ .Values.config.auth.adminPasswordSecretName }}
+                {{- else if .Values.config.auth.adminPassword }}
+                  name: {{ include "filebrowser-quantum.fullname" . }}-admin
+                {{- else }}
+                {{- fail "Either config.auth.adminPassword or config.auth.adminPasswordSecretName must be set" }}
+                {{- end }}
+                  key: password
+          {{- if or .Values.onlyoffice.active .Values.onlyoffice.secretname }}
+            - name: FILEBROWSER_ONLYOFFICE_SECRET
+              valueFrom:
+                secretKeyRef:
+                {{- if .Values.onlyoffice.secretname }}
+                  name: {{ .Values.onlyoffice.secretname }}
+                {{- else }}
+                  name: {{ include "filebrowser-quantum.fullname" . }}-office
+                {{- end}}
+                  key: onlyoffice-secret
+          {{- end}}
+          {{- if .Values.config.auth.methods.oidc.enabled}}
+            - name: FILEBROWSER_OIDC_CLIENT_ID
+              value: {{ .Values.config.auth.methods.oidc.clientId }} 
+            - name: FILEBROWSER_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                {{- if (((.Values.auth).methods).oidc).clientSecretName }}
+                  name: {{ .Values.auth.methods.oidc.clientSecretName }}
+                {{- else }}
+                  name: {{ include "filebrowser-quantum.fullname" . }}-oidc
+                {{- end}}
+                  key: oidc-secret
+          {{- end }}
+          {{- if .Values.config.auth.key }}
+            - name: FILEBROWSER_JWT_TOKEN_SECRET
+              value: {{ .Values.config.auth.key }}
+          {{- end }}
+          {{- if .Values.config.auth.totpSecret }}
+            - name: FILEBROWSER_TOTP_SECRET
+              value: {{ .Values.config.auth.totpSecret }} 
+          {{- end }}
+          {{- if .Values.config.auth.methods.password.recaptcha.key }}
+            - name: FILEBROWSER_RECAPTCHA_SECRET
+              value: {{ .Values.config.auth.methods.recaptcha.key }}
+          {{- end}}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: conf
+              mountPath: /home/filebrowser/config.yaml
+              subPath: config.yaml
+          {{- if .Values.volumes.database.enabled }}
+            - name: database
+              mountPath: "/home/filebrowser/db/"
+          {{- end }}
+          {{- if .Values.volumes.cache.enabled }}
+            - name: cache
+              mountPath: "/mnt/tmp"
+          {{- end }}
+          {{- range $key, $values := .Values.dataVolumes }}
+            - name: {{ $key }}
+              mountPath: {{ $values.mountPath }}
+          {{- end }}
+      volumes:
+        - name: conf
+          configMap:
+            name: {{ include "filebrowser-quantum.fullname" . }}-config
+      {{- if .Values.volumes.database.enabled }}
+        - name: database
+          persistentVolumeClaim:
+            claimName: {{ include "filebrowser-quantum.fullname" . }}-db
+      {{- end }}
+      {{- if .Values.volumes.cache.enabled }}
+        - name: cache 
+          persistentVolumeClaim: 
+            claimName: {{ include "filebrowser-quantum.fullname" . }}-cache
+      {{- end }}
+      {{- range $key, $values := .Values.dataVolumes }}
+        - name: {{ $key }}
+          persistentVolumeClaim:
+            claimName: {{ $values.claimName }}
+      {{- end }}
