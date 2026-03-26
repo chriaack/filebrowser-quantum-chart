@@ -42,6 +42,8 @@ spec:
             {{- end }}
           {{- end }}
           env:
+            - name: FILEBROWSER_CONFIG
+              value: /home/filebrowser/config.yaml
             - name: FILEBROWSER_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -115,6 +117,9 @@ spec:
           {{- if .Values.volumes.cache.enabled }}
             - name: cache
               mountPath: "/mnt/tmp"
+          {{- else }}
+            - name: tmp-volume
+              mountPath: /home/filebrowser/tmp
           {{- end }}
           {{- range $key, $values := .Values.dataVolumes }}
             - name: {{ $key }}
@@ -133,6 +138,9 @@ spec:
         - name: cache 
           persistentVolumeClaim: 
             claimName: {{ include "filebrowser-quantum.fullname" . }}-cache
+      {{- else }}
+        - name: tmp-volume
+          emptyDir: {}
       {{- end }}
       {{- range $key, $values := .Values.dataVolumes }}
         - name: {{ $key }}
