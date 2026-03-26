@@ -1,0 +1,207 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "filebrowser-quantum.fullname" . }}-oo-postgresql
+spec:
+  storageClassName:  {{ .Values.onlyoffice.volume.storageClassName }}
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.onlyoffice.volume.size }}
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "filebrowser-quantum.fullname" . }}-oo-postgresql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "filebrowser-quantum.fullname" . }}-oo-postgresql
+  template:
+    metadata:
+      labels:
+        app: {{ include "filebrowser-quantum.fullname" . }}-oo-postgresql
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15
+          env:
+            - name: POSTGRES_DB
+              value: onlyoffice
+            - name: POSTGRES_USER
+              value: onlyoffice
+            - name: POSTGRES_HOST_AUTH_METHOD
+              value: trust
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - mountPath: /var/lib/postgresql
+              name: storage
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "onlyoffice"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: {{ include "filebrowser-quantum.fullname" . }}-oo-postgresql
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "filebrowser-quantum.fullname" . }}-oo-postgresql
+spec:
+  selector:
+    app: {{ include "filebrowser-quantum.fullname" . }}-oo-postgresql
+  ports:
+    - port: 5432
+      targetPort: 5432
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "filebrowser-quantum.fullname" . }}-oo-rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "filebrowser-quantum.fullname" . }}-oo-rabbitmq
+  template:
+    metadata:
+      labels:
+        app: {{ include "filebrowser-quantum.fullname" . }}-oo-rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3
+          ports:
+            - containerPort: 5672
+          readinessProbe:
+            exec:
+              command: ["rabbitmq-diagnostics", "status"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "filebrowser-quantum.fullname" . }}-oo-rabbitmq
+spec:
+  selector:
+    app: {{ include "filebrowser-quantum.fullname" . }}-oo-rabbitmq
+  ports:
+    - port: 5672
+      targetPort: 5672
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "filebrowser-quantum.fullname" . }}-oo-documentserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "filebrowser-quantum.fullname" . }}-oo-documentserver
+  template:
+    metadata:
+      labels:
+        app: {{ include "filebrowser-quantum.fullname" . }}-oo-documentserver
+    spec:
+      containers:
+        - name: documentserver
+          image: onlyoffice/documentserver
+          ports:
+            - containerPort: 80
+            - containerPort: 443
+          env:
+            - name: TRACKING_DISABLED
+              value: "true"
+            - name: DOCSERV_PUBLIC_HOST
+              value: {{ .Values.onlyoffice.ingress.host }}
+            - name: DOCSERV_HTTPS
+              value: "true"
+            - name: USE_UNAUTHORIZED_STORAGE
+              value: "true"
+            - name: DB_TYPE
+              value: postgres
+            - name: DB_HOST
+              value: {{ include "filebrowser-quantum.fullname" . }}-oo-postgresql
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: onlyoffice
+            - name: DB_USER
+              value: onlyoffice
+            - name: AMQP_URI
+              value: amqp://guest:guest@{{ include "filebrowser-quantum.fullname" . }}-oo-rabbitmq
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "filebrowser-quantum.fullname" . }}-oo-documentserver
+spec:
+  selector:
+    app: {{ include "filebrowser-quantum.fullname" . }}-oo-documentserver
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+    - name: https
+      port: 443
+      targetPort: 443
+  type: ClusterIP
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "filebrowser-quantum.fullname" . }}-oo
+  labels:
+    {{- include "filebrowser-quantum.labels" . | nindent 4 }}-oo
+  {{- if or .Values.onlyoffice.ingress.ingressClassName .Values.onlyoffice.ingress.annotations}}
+  annotations:
+    {{- if .Values.onlyoffice.ingress.ingressClassName }}
+    kubernetes.io/ingress.class: {{ .Values.onlyoffice.ingress.ingressClassName }}
+    {{- end }}
+    {{- if .Values.onlyoffice.ingress.annotations }}
+    {{- toYaml .Values.onlyoffice.ingress.annotations | nindent 4 }}
+    {{- end }}
+    nginx.ingress.kubernetes.io/websocket-services: <documentserver-service-name>
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+  {{- end }}
+spec:
+  {{- if .Values.onlyoffice.ingress.ingressClassName }}
+  ingressClassName: {{ .Values.onlyoffice.ingress.ingressClassName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.onlyoffice.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "filebrowser-quantum.fullname" . }}-oo-documentserver
+                port:
+                  number: 80
+
+{{- if .Values.ingress.tls }}
+  tls:
+    - hosts:
+        - {{ .Values.onlyoffice.ingress.host }}
+      secretName: {{ .Values.onlyoffice.ingress.tlsSecret  | default (printf "%s-tls" .Release.Name) }}
+{{- end }}
