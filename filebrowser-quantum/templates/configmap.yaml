@@ -48,21 +48,20 @@ data:
             disabled: {{ (($values.config).disabled) | default false }}                   # disable the source, this is useful so you don't need to remove it from the config file
             indexingIntervalMinutes: {{ (($values.config).indexingIntervalMinutes) | default 0 }}        # optional manual overide interval in minutes to re-index the source
             disableIndexing: {{ (($values.config).disableIndexing) | default false }}            # disable the indexing of this source
-            conditionals:                     # conditional rules to apply when indexing to include/exclude certain items
-              ignoreHidden: {{ ((($values.config).conditionals).ignoreHidden) | default false }}             # exclude hidden files and folders.
-              ignoreZeroSizeFolders: {{ ((($values.config).conditionals).ignoreZeroSizeFolders) | default false }}    # ignore folders with 0 size
-              rules:                          # list of item rules to apply to specific paths
-                - neverWatchPath: {{ (((($values.config).conditionals).rules).neverWatchPath) | default "" | quote }}          # index the folder in the first pass to get included in search, but never re-indexed.
-                  includeRootItem: {{ (((($values.config).conditionals).rules).includeRootItem) | default "" | quote }}         # include only these items at root folder level
-                  fileStartsWith: {{ (((($values.config).conditionals).rules).fileStartsWith) | default "" | quote }}          # (global) exclude files that start with these prefixes. Eg. "archive-" or "backup-"
-                  folderStartsWith: {{ (((($values.config).conditionals).rules).folderStartsWith) | default "" | quote }}        # (global) exclude folders that start with these prefixes. Eg. "archive-" or "backup-"
-                  fileEndsWith: {{ (((($values.config).conditionals).rules).fileEndsWith) | default "" | quote }}            # (global) exclude files that end with these suffixes. Eg. ".jpg" or ".txt"
-                  folderEndsWith: {{ (((($values.config).conditionals).rules).folderEndsWith) | default "" | quote }}          # (global) exclude folders that end with these suffixes. Eg. ".thumbnails" or ".git"
-                  folderPath: {{ (((($values.config).conditionals).rules).folderPath) | default "" | quote }}              # (global) exclude folders that match this path. Eg. "/path/to/folder" or "/path/to/folder/subfolder"
-                  filePath: {{ (((($values.config).conditionals).rules).filePath) | default "" | quote }}                # (global) exclude files that match this path. Eg. "/path/to/file.txt" or "/path/to/file.txt/subfile.txt"
-                  fileName: {{ (((($values.config).conditionals).rules).fileName) | default "" | quote }}                # (global) exclude files that match these names. Eg. "file.txt" or "test.csv"
-                  folderName: {{ (((($values.config).conditionals).rules).folderName) | default "" | quote }}              # (global) exclude folders that match these names. Eg. "folder" or "subfolder"
-                  viewable: {{ (((($values.config).conditionals).rules).viewable) | default false }}             # Enable viewing in UI but exclude from indexing
+            rules:                          # list of item rules to apply to specific paths
+              - ignoreHidden: {{ (($values.config).ignoreHidden) | default false }}             # exclude hidden files and folders.
+                ignoreZeroSizeFolders: {{ (($values.config).ignoreZeroSizeFolders) | default false }}    # ignore folders with 0 size
+                neverWatchPath: {{ ((($values.config).rules).neverWatchPath) | default "" | quote }}          # index the folder in the first pass to get included in search, but never re-indexed.
+                includeRootItem: {{ ((($values.config).rules).includeRootItem) | default "" | quote }}         # include only these items at root folder level
+                fileStartsWith: {{ ((($values.config).rules).fileStartsWith) | default "" | quote }}          # (global) exclude files that start with these prefixes. Eg. "archive-" or "backup-"
+                folderStartsWith: {{ ((($values.config).rules).folderStartsWith) | default "" | quote }}        # (global) exclude folders that start with these prefixes. Eg. "archive-" or "backup-"
+                fileEndsWith: {{ ((($values.config).rules).fileEndsWith) | default "" | quote }}            # (global) exclude files that end with these suffixes. Eg. ".jpg" or ".txt"
+                folderEndsWith: {{ ((($values.config).rules).folderEndsWith) | default "" | quote }}          # (global) exclude folders that end with these suffixes. Eg. ".thumbnails" or ".git"
+                folderPath: {{ ((($values.config).rules).folderPath) | default "" | quote }}              # (global) exclude folders that match this path. Eg. "/path/to/folder" or "/path/to/folder/subfolder"
+                filePath: {{ ((($values.config).rules).filePath) | default "" | quote }}                # (global) exclude files that match this path. Eg. "/path/to/file.txt" or "/path/to/file.txt/subfile.txt"
+                fileName: {{ ((($values.config).rules).fileName) | default "" | quote }}                # (global) exclude files that match these names. Eg. "file.txt" or "test.csv"
+                folderName: {{ ((($values.config).rules).folderName) | default "" | quote }}              # (global) exclude folders that match these names. Eg. "folder" or "subfolder"
+                viewable: {{ ((($values.config).rules).viewable) | default false }}             # Enable viewing in UI but exclude from indexing
             defaultUserScope: {{ (($values.config).defaultUserScope) | default "/" | quote }}             # default "/" should match folders under path
             defaultEnabled: {{ (($values.config).defaultEnabled) | default true }}              # should be added as a default source for new users?
             createUserDir: {{ (($values.config).createUserDir) | default false }}
