@@ -9,6 +9,11 @@ data:
 {{ if .Values.config.customConfig }}
 {{ .Values.config.customConfig | indent 4 }}
 {{ else }}
+    {{- if .Values.onlyoffice.enable }}
+    integrations:
+      office:
+        url: https://{{ .Values.onlyoffice.ingress.host }}
+    {{- end }}
     server:
       minSearchLength: {{ .Values.config.minSearchLength }}                      # minimum length of search query to begin searching (default: 3)
       disableUpdateCheck: {{ .Values.config.disableUpdateCheck }}               # disables backend update check service

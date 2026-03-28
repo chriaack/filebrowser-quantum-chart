@@ -178,7 +178,10 @@ config:
 onlyoffice:
   active: false
   secret: ""
-  secretname: ""
+  secretName: ""
+  volumes: 
+    storageClassName: ""
+    size: ""
 
 # todo frontend
 # todo integrations

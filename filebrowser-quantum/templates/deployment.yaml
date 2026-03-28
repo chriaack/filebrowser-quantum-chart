@@ -44,6 +44,19 @@ spec:
           env:
             - name: FILEBROWSER_CONFIG
               value: /home/filebrowser/config.yaml
+            {{- if .Values.onlyoffice.enable }}
+            - name: FILEBROWSER_ONLYOFFICE_SECRET
+              valueFrom:
+                secretKeyRef:
+                {{- if .Values.onlyoffice.secretName }}
+                  name: {{ .Values.onlyoffice.secretName }}
+                {{- else if .Values.onlyoffice.secret }}
+                  name: {{ include "filebrowser-quantum.fullname" . }}-onlyoffice
+                {{- else }}
+                {{- fail "Either onlyoffice.secretName or onlyoffice.secret must be set" }}
+                {{- end }}
+                  key: onlyoffice-secret
+            {{- end }}
             - name: FILEBROWSER_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -55,17 +68,6 @@ spec:
                 {{- fail "Either config.auth.adminPassword or config.auth.adminPasswordSecretName must be set" }}
                 {{- end }}
                   key: password
-          {{- if or .Values.onlyoffice.active .Values.onlyoffice.secretname }}
-            - name: FILEBROWSER_ONLYOFFICE_SECRET
-              valueFrom:
-                secretKeyRef:
-                {{- if .Values.onlyoffice.secretname }}
-                  name: {{ .Values.onlyoffice.secretname }}
-                {{- else }}
-                  name: {{ include "filebrowser-quantum.fullname" . }}-office
-                {{- end}}
-                  key: onlyoffice-secret
-          {{- end}}
           {{- if .Values.config.auth.methods.oidc.enabled}}
             - name: FILEBROWSER_OIDC_CLIENT_ID
               value: {{ .Values.config.auth.methods.oidc.clientId }} 

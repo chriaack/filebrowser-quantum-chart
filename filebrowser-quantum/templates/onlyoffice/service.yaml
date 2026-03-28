@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "filebrowser-quantum.fullname" . }}-oo-documentserver
+spec:
+  selector:
+    app: {{ include "filebrowser-quantum.fullname" . }}-oo-documentserver
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+    - name: https
+      port: 443
+      targetPort: 443
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "filebrowser-quantum.fullname" . }}-oo-rabbitmq
+spec:
+  selector:
+    app: {{ include "filebrowser-quantum.fullname" . }}-oo-rabbitmq
+  ports:
+    - port: 5672
+      targetPort: 5672
+
+---
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "filebrowser-quantum.fullname" . }}-oo-postgresql
+spec:
+  selector:
+    app: {{ include "filebrowser-quantum.fullname" . }}-oo-postgresql
+  ports:
+    - port: 5432
+      targetPort: 5432
