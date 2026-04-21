@@ -37,5 +37,5 @@ spec:
   tls:
     - hosts:
         - {{ .Values.onlyoffice.ingress.host }}
-      secretName: {{ .Values.onlyoffice.ingress.tlsSecret  | default (printf "%s-tls" .Release.Name) }}
+      secretName: {{ .Values.onlyoffice.ingress.tlsSecret  | default (printf "%s-oo-tls" .Release.Name) }}
 {{- end }}
