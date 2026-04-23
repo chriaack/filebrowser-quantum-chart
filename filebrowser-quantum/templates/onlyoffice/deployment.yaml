@@ -1,5 +1,5 @@
+{{- if .Values.onlyoffice.deploy }}
 ---
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -40,7 +40,6 @@ spec:
             claimName: {{ include "filebrowser-quantum.fullname" . }}-oo-postgresql
 
 ---
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -121,4 +120,4 @@ spec:
                 {{- fail "Either onlyoffice.secretName or onlyoffice.secret must be set" }}
                 {{- end }}
                   key: onlyoffice-secret
----
+{{- end }}

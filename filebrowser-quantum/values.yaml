@@ -176,10 +176,17 @@ config:
     defaultLandingPage: ""
 
 onlyoffice:
-  active: false
+  enabled: false
+  deploy: false
   secret: ""
   secretName: ""
-  volumes: 
+  ingress:
+    tls: false
+    hostname: ""
+    tlsSecret: ""
+    ingressClassName: ""
+    annotations: {}
+  volume:
     storageClassName: ""
     size: ""
 

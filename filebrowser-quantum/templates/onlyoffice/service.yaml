@@ -1,3 +1,4 @@
+{{- if .Values.onlyoffice.deploy }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -29,7 +30,6 @@ spec:
 
 ---
 
----
 apiVersion: v1
 kind: Service
 metadata:
@@ -40,3 +40,4 @@ spec:
   ports:
     - port: 5432
       targetPort: 5432
+{{- end }}

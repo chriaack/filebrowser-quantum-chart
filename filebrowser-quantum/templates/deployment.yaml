@@ -44,7 +44,7 @@ spec:
           env:
             - name: FILEBROWSER_CONFIG
               value: /home/filebrowser/config.yaml
-            {{- if .Values.onlyoffice.enable }}
+            {{- if .Values.onlyoffice.enabled }}
             - name: FILEBROWSER_ONLYOFFICE_SECRET
               valueFrom:
                 secretKeyRef:

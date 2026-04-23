@@ -197,6 +197,19 @@ helm install myrelease ./mychart \
 | config.userDefaults.debugOffice | false | Enable OnlyOffice debug mode |
 | config.userDefaults.defaultLandingPage | "" | Default landing page |
 
+## OnlyOffice
+
+| Value | Default | Description |
+|-------|---------|-------------|
+| onlyoffice.enabled | false | Enable OnlyOffice integration in FileBrowser config (for external OnlyOffice instance) |
+| onlyoffice.deploy | false | Deploy internal OnlyOffice stack (PostgreSQL, RabbitMQ, DocumentServer - for testing only) |
+| onlyoffice.secret | "" | OnlyOffice secret (use when not using secretName) |
+| onlyoffice.secretName | "" | Name of existing Secret containing OnlyOffice secret |
+| onlyoffice.ingress.host | "" | Hostname for OnlyOffice ingress |
+| onlyoffice.ingress.tls | false | Enable TLS for OnlyOffice ingress |
+| onlyoffice.volume.storageClassName | "" | Storage class for OnlyOffice PostgreSQL PVC |
+| onlyoffice.volume.size | 1Gi | Size of OnlyOffice PostgreSQL PVC |
+
 ## Development
 
 ### Testing
