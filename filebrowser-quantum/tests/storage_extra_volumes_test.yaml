@@ -15,20 +15,20 @@ tests:
           mountPath: /mnt/data
     asserts:
       - equal:
-          path: spec.template.spec.containers[0].volumeMounts[1].name
+          path: spec.template.spec.containers[0].volumeMounts[2].name
           value: data 
       - equal:
-          path: spec.template.spec.containers[0].volumeMounts[1].mountPath
+          path: spec.template.spec.containers[0].volumeMounts[2].mountPath
           value: /mnt/data
       - equal:
-          path: spec.template.spec.volumes[1].name
+          path: spec.template.spec.volumes[2].name
           value: data
       - notExists:
-          path: spec.template.spec.containers[0].volumeMounts[2]
+          path: spec.template.spec.containers[0].volumeMounts[3]
       - notExists:
-          path: spec.template.spec.volumes[2]
+          path: spec.template.spec.volumes[3]
       - equal:
-          path: "spec.template.spec.volumes[1].persistentVolumeClaim.claimName"
+          path: "spec.template.spec.volumes[2].persistentVolumeClaim.claimName"
           value: test
 ---
 suite: extra volumeMounts - pvc

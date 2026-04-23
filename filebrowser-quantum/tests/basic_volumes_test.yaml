@@ -115,9 +115,9 @@ tests:
           path: spec.template.spec.volumes[1].persistentVolumeClaim.claimName
           value: RELEASE-NAME-filebrowser-quantum-db
       - notExists:
-          path: spec.template.spec.containers[0].volumeMounts[2]
+          path: spec.template.spec.containers[0].volumeMounts[3]
       - notExists:
-          path: spec.template.spec.volumes[2]
+          path: spec.template.spec.volumes[3]
 
   - it: should render ONLY the cache volume and volumeMount
     set:
@@ -195,6 +195,6 @@ tests:
           enabled: false
     asserts:
       - notExists:
-          path: spec.template.spec.containers[0].volumeMounts[1]
+          path: spec.template.spec.containers[0].volumeMounts[2]
       - notExists:
-          path: spec.template.spec.volumes[1]
+          path: spec.template.spec.volumes[2]
