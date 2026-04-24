@@ -10,7 +10,7 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      {{- include "filebrowser-quantum.labels" . | nindent 6 }}
+      {{- include "filebrowser-quantum.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
@@ -27,11 +27,11 @@ spec:
         - name: filebrowser
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- if .Values.securityContext.enabled }}
           {{- if .Values.resources }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- end }}
+          {{- if .Values.securityContext.enabled }}
           securityContext:
             {{- with .Values.securityContext }}
             runAsUser: {{ .runAsUser }}
@@ -44,6 +44,19 @@ spec:
           env:
             - name: FILEBROWSER_CONFIG
               value: /home/filebrowser/config.yaml
+            {{- if .Values.onlyoffice.enabled }}
+            - name: FILEBROWSER_ONLYOFFICE_SECRET
+              valueFrom:
+                secretKeyRef:
+                {{- if .Values.onlyoffice.secretName }}
+                  name: {{ .Values.onlyoffice.secretName }}
+                {{- else if .Values.onlyoffice.secret }}
+                  name: {{ include "filebrowser-quantum.fullname" . }}-onlyoffice
+                {{- else }}
+                {{- fail "Either onlyoffice.secretName or onlyoffice.secret must be set" }}
+                {{- end }}
+                  key: onlyoffice-secret
+            {{- end }}
             - name: FILEBROWSER_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -55,25 +68,14 @@ spec:
                 {{- fail "Either config.auth.adminPassword or config.auth.adminPasswordSecretName must be set" }}
                 {{- end }}
                   key: password
-          {{- if or .Values.onlyoffice.active .Values.onlyoffice.secretname }}
-            - name: FILEBROWSER_ONLYOFFICE_SECRET
-              valueFrom:
-                secretKeyRef:
-                {{- if .Values.onlyoffice.secretname }}
-                  name: {{ .Values.onlyoffice.secretname }}
-                {{- else }}
-                  name: {{ include "filebrowser-quantum.fullname" . }}-office
-                {{- end}}
-                  key: onlyoffice-secret
-          {{- end}}
           {{- if .Values.config.auth.methods.oidc.enabled}}
             - name: FILEBROWSER_OIDC_CLIENT_ID
               value: {{ .Values.config.auth.methods.oidc.clientId }} 
             - name: FILEBROWSER_OIDC_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                {{- if (((.Values.auth).methods).oidc).clientSecretName }}
-                  name: {{ .Values.auth.methods.oidc.clientSecretName }}
+                {{- if .Values.config.auth.methods.oidc.clientSecretName }}
+                  name: {{ .Values.config.auth.methods.oidc.clientSecretName }}
                 {{- else }}
                   name: {{ include "filebrowser-quantum.fullname" . }}-oidc
                 {{- end}}
@@ -89,7 +91,7 @@ spec:
           {{- end }}
           {{- if .Values.config.auth.methods.password.recaptcha.key }}
             - name: FILEBROWSER_RECAPTCHA_SECRET
-              value: {{ .Values.config.auth.methods.recaptcha.key }}
+              value: {{ .Values.config.auth.methods.password.recaptcha.key }}
           {{- end}}
           ports:
             - containerPort: {{ .Values.service.port }}

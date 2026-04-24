@@ -1,0 +1,43 @@
+{{- if .Values.onlyoffice.deploy }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "filebrowser-quantum.fullname" . }}-oo
+  labels:
+    {{- include "filebrowser-quantum.labels" . | nindent 4 }}
+  {{- if or .Values.onlyoffice.ingress.ingressClassName .Values.onlyoffice.ingress.annotations}}
+  annotations:
+    {{- if .Values.onlyoffice.ingress.ingressClassName }}
+    kubernetes.io/ingress.class: {{ .Values.onlyoffice.ingress.ingressClassName }}
+    {{- end }}
+    {{- if .Values.onlyoffice.ingress.annotations }}
+    {{- toYaml .Values.onlyoffice.ingress.annotations | nindent 4 }}
+    {{- end }}
+    nginx.ingress.kubernetes.io/websocket-services: {{ include "filebrowser-quantum.fullname" . }}-oo-documentserver
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+  {{- end }}
+spec:
+  {{- if .Values.onlyoffice.ingress.ingressClassName }}
+  ingressClassName: {{ .Values.onlyoffice.ingress.ingressClassName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.onlyoffice.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "filebrowser-quantum.fullname" . }}-oo-documentserver
+                port:
+                  number: 80
+
+{{- if .Values.onlyoffice.ingress.tls }}
+  tls:
+    - hosts:
+        - {{ .Values.onlyoffice.ingress.host }}
+      secretName: {{ .Values.onlyoffice.ingress.tlsSecret | default (printf "%s-oo-tls" .Release.Name) }}
+{{- end }}
+{{- end }}

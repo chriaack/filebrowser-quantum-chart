@@ -43,6 +43,26 @@ volumes:
     accessMode: "ReadWriteOnce"
 
 dataVolumes: {}
+# example
+# homefolders:
+#     create: true
+#     claimName: filebrowser-homes
+#     mountPath: /mnt/home
+#     defaultUserScope: "/home"
+#     accessMode: ReadWriteOnce
+#     storageClassName: freenas-nfs-csi-slow
+#     size: 1Ti
+#     config:
+#       createUserDir: true
+#   pictures:
+#     create: true
+#     claimName: pictures
+#     mountPath: /mnt/pictures
+#     accessMode: ReadWriteMany
+#     storageClassName: freenas-nfs-csi-slow
+#     size: 1Gi
+#     config:
+#       createUserDir: false
 
 config:
 ### Example
@@ -176,10 +196,18 @@ config:
     defaultLandingPage: ""
 
 onlyoffice:
-  active: false
+  enabled: false
+  deploy: false
   secret: ""
-  secretname: ""
+  secretName: ""
+  ingress:
+    tls: false
+    host: ""
+    tlsSecret: ""
+    ingressClassName: ""
+    annotations: {}
+  volume:
+    storageClassName: ""
+    size: "1Gi"
 
 # todo frontend
-# todo integrations
-# todo onlyOffice Sub chart
