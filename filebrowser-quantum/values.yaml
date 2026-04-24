@@ -208,6 +208,6 @@ onlyoffice:
     annotations: {}
   volume:
     storageClassName: ""
-    size: ""
+    size: "1Gi"
 
 # todo frontend

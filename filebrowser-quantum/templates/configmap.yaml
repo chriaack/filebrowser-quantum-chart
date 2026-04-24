@@ -1,3 +1,6 @@
+{{- $ingressScheme := ternary "https" "http" .Values.ingress.tls -}}
+{{- $onlyofficeScheme := ternary "https" "http" .Values.onlyoffice.ingress.tls -}}
+
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -12,7 +15,7 @@ data:
     {{- if .Values.onlyoffice.enabled }}
     integrations:
       office:
-        url: https://{{ .Values.onlyoffice.ingress.host }}
+        url: {{ $onlyofficeScheme }}://{{ .Values.onlyoffice.ingress.host }}
     {{- end }}
     server:
       minSearchLength: {{ .Values.config.minSearchLength }}                      # minimum length of search query to begin searching (default: 3)
@@ -76,7 +79,7 @@ data:
         - path: "/srv"
     {{- end }}
     {{- if .Values.ingress.enabled }}
-      externalUrl: "https://{{ .Values.ingress.host }}"                         # used by share links if set (eg. http://mydomain.com)
+      externalUrl: "{{ $ingressScheme }}://{{ .Values.ingress.host }}"                         # used by share links if set (eg. http://mydomain.com)
     {{- end }}
     {{- if .Values.volumes.cache.enabled }}
       cacheDir: "/mnt/tmp"                         # path to the cache directory, used for thumbnails and other cached files
