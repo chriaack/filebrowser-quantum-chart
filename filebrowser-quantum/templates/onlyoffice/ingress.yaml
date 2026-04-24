@@ -4,7 +4,7 @@ kind: Ingress
 metadata:
   name: {{ include "filebrowser-quantum.fullname" . }}-oo
   labels:
-    {{- include "filebrowser-quantum.labels" . | nindent 4 }}-oo
+    {{- include "filebrowser-quantum.labels" . | nindent 4 }}
   {{- if or .Values.onlyoffice.ingress.ingressClassName .Values.onlyoffice.ingress.annotations}}
   annotations:
     {{- if .Values.onlyoffice.ingress.ingressClassName }}

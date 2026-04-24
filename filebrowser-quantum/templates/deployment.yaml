@@ -27,11 +27,11 @@ spec:
         - name: filebrowser
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- if .Values.securityContext.enabled }}
           {{- if .Values.resources }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- end }}
+          {{- if .Values.securityContext.enabled }}
           securityContext:
             {{- with .Values.securityContext }}
             runAsUser: {{ .runAsUser }}
