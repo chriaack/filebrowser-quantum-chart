@@ -4,6 +4,8 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ include "filebrowser-quantum.fullname" . }}-oo-postgresql
+  labels:
+    {{- include "filebrowser-quantum.labels" . | nindent 4 }}
 spec:
 {{- if .Values.onlyoffice.volume.storageClassName }}
   storageClassName:  {{ .Values.onlyoffice.volume.storageClassName }}

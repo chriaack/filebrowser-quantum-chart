@@ -13,7 +13,7 @@ metadata:
     {{- if .Values.onlyoffice.ingress.annotations }}
     {{- toYaml .Values.onlyoffice.ingress.annotations | nindent 4 }}
     {{- end }}
-    nginx.ingress.kubernetes.io/websocket-services: <documentserver-service-name>
+    nginx.ingress.kubernetes.io/websocket-services: {{ include "filebrowser-quantum.fullname" . }}-oo-documentserver
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-body-size: "100m"

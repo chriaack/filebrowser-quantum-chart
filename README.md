@@ -1,5 +1,5 @@
 # filebrowser-quantum-chart
-Helm chart for the filebrowser-quantum 
+Helm chart for FileBrowser-Quantum
 
 This Helm chart provides a centralized solution to access multiple PVCs from a single deployment. I chose filebrowser-quantum because its dynamic indexing feature is essential for this use case.
 
@@ -25,7 +25,7 @@ helm install myrelease ./mychart \
 | Value | Default | Description |
 |-------|---------|-------------|
 | image.repository | gtstef/filebrowser | Docker image repository |
-| image.tag | 1.0.3-stable | Docker image tag |
+| image.tag | 1.3.0-stable | Docker image tag |
 | image.pullPolicy | IfNotPresent | Image pull policy |
 
 ### Security Context
@@ -36,6 +36,14 @@ helm install myrelease ./mychart \
 | securityContext.runAsGroup | 1000 | Group ID to run as |
 | securityContext.fsGroup | 1000 | File system group ID |
 | securityContext.allowPrivilegeEscalation | false | Allow privilege escalation |
+| securityContext.runAsNonRoot | true | Run container as non-root user |
+| securityContext.readOnlyRootFilesystem | true | Use read-only root filesystem |
+
+### Naming
+| Value | Default | Description |
+|-------|---------|-------------|
+| nameOverride | "" | Override chart name |
+| fullnameOverride | "" | Override full release name |
 
 ### Ingress
 | Value | Default | Description |
@@ -49,7 +57,7 @@ helm install myrelease ./mychart \
 ### Service
 | Value | Default | Description |
 |-------|---------|-------------|
-| service.port | 80 | Service port |
+| service.port | 80 | Service port (container port) |
 
 ### Volumes
 | Value | Default | Description |
@@ -202,13 +210,27 @@ helm install myrelease ./mychart \
 | Value | Default | Description |
 |-------|---------|-------------|
 | onlyoffice.enabled | false | Enable OnlyOffice integration in FileBrowser config (for external OnlyOffice instance) |
-| onlyoffice.deploy | false | Deploy internal OnlyOffice stack (PostgreSQL, RabbitMQ, DocumentServer - for testing only) |
+| onlyoffice.deploy | false | Deploy internal OnlyOffice stack (PostgreSQL, RabbitMQ, DocumentServer - for testing only. Version: PostgreSQL 15, RabbitMQ 3, DocumentServer latest) |
 | onlyoffice.secret | "" | OnlyOffice secret (use when not using secretName) |
-| onlyoffice.secretName | "" | Name of existing Secret containing OnlyOffice secret |
+| onlyoffice.secretName | "" | Name of existing Secret containing OnlyOffice secret. If not set, secret will be auto-created as `<release-name>-onlyoffice` |
 | onlyoffice.ingress.host | "" | Hostname for OnlyOffice ingress |
 | onlyoffice.ingress.tls | false | Enable TLS for OnlyOffice ingress |
+| onlyoffice.ingress.tlsSecret | "" | Secret name for TLS (defaults to `<release-name>-oo-tls`) |
+| onlyoffice.ingress.ingressClassName | "" | Ingress class name |
 | onlyoffice.volume.storageClassName | "" | Storage class for OnlyOffice PostgreSQL PVC |
 | onlyoffice.volume.size | 1Gi | Size of OnlyOffice PostgreSQL PVC |
+
+## OnlyOffice Deploy Limitations
+
+⚠️ The `onlyoffice.deploy` feature is intended for **testing only** and not recommended for production:
+
+- Single replica deployments (no high availability)
+- PostgreSQL uses "trust" authentication (not secure for production)
+- RabbitMQ has no persistent storage
+- No horizontal scaling support
+- All components run as root user
+
+✅ **Recommended for production**: Deploy OnlyOffice separately and use `onlyoffice.enabled=true` with an external instance.
 
 ## Development
 
@@ -225,13 +247,13 @@ helm unittest ./filebrowser-quantum/
 
 Run a specific test-suite:
 ```bash
-helm unittest ./filebrowser-quantum/tests/storage_standard_volumes_deployment_test.yaml
+helm unittest ./filebrowser-quantum/tests/basic_volumes_test.yaml
 ```
 
 ### Linting
 Lint the Helm chart files:
 ```bash
-helm lint ./filewbrower-quantum/
+helm lint ./filebrowser-quantum/
 ```
 
 ### Template Rendering

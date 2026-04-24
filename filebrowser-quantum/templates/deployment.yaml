@@ -10,7 +10,7 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      {{- include "filebrowser-quantum.labels" . | nindent 6 }}
+      {{- include "filebrowser-quantum.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
@@ -74,8 +74,8 @@ spec:
             - name: FILEBROWSER_OIDC_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                {{- if (((.Values.auth).methods).oidc).clientSecretName }}
-                  name: {{ .Values.auth.methods.oidc.clientSecretName }}
+                {{- if .Values.config.auth.methods.oidc.clientSecretName }}
+                  name: {{ .Values.config.auth.methods.oidc.clientSecretName }}
                 {{- else }}
                   name: {{ include "filebrowser-quantum.fullname" . }}-oidc
                 {{- end}}
@@ -91,7 +91,7 @@ spec:
           {{- end }}
           {{- if .Values.config.auth.methods.password.recaptcha.key }}
             - name: FILEBROWSER_RECAPTCHA_SECRET
-              value: {{ .Values.config.auth.methods.recaptcha.key }}
+              value: {{ .Values.config.auth.methods.password.recaptcha.key }}
           {{- end}}
           ports:
             - containerPort: {{ .Values.service.port }}
