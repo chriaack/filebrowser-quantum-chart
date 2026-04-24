@@ -213,7 +213,7 @@ helm install myrelease ./mychart \
 | onlyoffice.deploy | false | Deploy internal OnlyOffice stack (PostgreSQL, RabbitMQ, DocumentServer - for testing only. Version: PostgreSQL 15, RabbitMQ 3, DocumentServer latest) |
 | onlyoffice.secret | "" | OnlyOffice secret (use when not using secretName) |
 | onlyoffice.secretName | "" | Name of existing Secret containing OnlyOffice secret. If not set, secret will be auto-created as `<release-name>-onlyoffice` |
-| onlyoffice.ingress.host | "" | Hostname for OnlyOffice ingress |
+| onlyoffice.ingress.host | "" | OnlyOffice hostname: for internal deploy creates ingress host; for external instance, set the hostname in the OnlyOffice URL |
 | onlyoffice.ingress.tls | false | Enable TLS for OnlyOffice ingress |
 | onlyoffice.ingress.tlsSecret | "" | Secret name for TLS (defaults to `<release-name>-oo-tls`) |
 | onlyoffice.ingress.ingressClassName | "" | Ingress class name |
