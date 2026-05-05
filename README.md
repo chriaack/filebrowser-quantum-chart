@@ -25,7 +25,7 @@ helm install myrelease ./mychart \
 | Value | Default | Description |
 |-------|---------|-------------|
 | image.repository | gtstef/filebrowser | Docker image repository |
-| image.tag | 1.3.0-stable | Docker image tag |
+| image.tag | 1.3.1-stable | Docker image tag |
 | image.pullPolicy | IfNotPresent | Image pull policy |
 
 ### Security Context
