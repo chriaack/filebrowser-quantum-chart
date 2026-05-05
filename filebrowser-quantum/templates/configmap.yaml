@@ -1,3 +1,6 @@
+{{- $ingressScheme := ternary "https" "http" .Values.ingress.tls -}}
+{{- $onlyofficeScheme := ternary "https" "http" .Values.onlyoffice.ingress.tls -}}
+
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -6,9 +9,14 @@ metadata:
     {{- include "filebrowser-quantum.labels" . | nindent 4 }}
 data:
   config.yaml: |
-{{ if .Values.config.customConfig }}
+{{- if .Values.config.customConfig }}
 {{ .Values.config.customConfig | indent 4 }}
-{{ else }}
+{{- else }}
+    {{- if .Values.onlyoffice.enabled }}
+    integrations:
+      office:
+        url: {{ $onlyofficeScheme }}://{{ .Values.onlyoffice.ingress.host }}
+    {{- end }}
     server:
       minSearchLength: {{ .Values.config.minSearchLength }}                      # minimum length of search query to begin searching (default: 3)
       disableUpdateCheck: {{ .Values.config.disableUpdateCheck }}               # disables backend update check service
@@ -43,35 +51,35 @@ data:
         - path: {{ $values.mountPath}}                           # file system path. (Can be relative)  validate:required
           name: {{ $key }}                     # display name
           config:
-            denyByDefault: {{ (($values.config).denyByDefault) | default false }}              # deny access unless an "allow" access rule was specifically created.
-            private: {{ (($values.config).private) | default false }}                    # designate as source as private -- currently just means no sharing permitted.
-            disabled: {{ (($values.config).disabled) | default false }}                   # disable the source, this is useful so you don't need to remove it from the config file
-            indexingIntervalMinutes: {{ (($values.config).indexingIntervalMinutes) | default 0 }}        # optional manual overide interval in minutes to re-index the source
-            disableIndexing: {{ (($values.config).disableIndexing) | default false }}            # disable the indexing of this source
+            denyByDefault: {{ $values.config.denyByDefault | default false }}              # deny access unless an "allow" access rule was specifically created.
+            private: {{ $values.config.private | default false }}                    # designate as source as private -- currently just means no sharing permitted.
+            disabled: {{ $values.config.disabled | default false }}                   # disable the source, this is useful so you don't need to remove it from the config file
+            indexingIntervalMinutes: {{ $values.config.indexingIntervalMinutes | default 0 }}        # optional manual overide interval in minutes to re-index the source
+            disableIndexing: {{ $values.config.disableIndexing | default false }}            # disable the indexing of this source
             rules:                          # list of item rules to apply to specific paths
-              - ignoreHidden: {{ (($values.config).ignoreHidden) | default false }}             # exclude hidden files and folders.
-                ignoreZeroSizeFolders: {{ (($values.config).ignoreZeroSizeFolders) | default false }}    # ignore folders with 0 size
-                neverWatchPath: {{ ((($values.config).rules).neverWatchPath) | default "" | quote }}          # index the folder in the first pass to get included in search, but never re-indexed.
-                includeRootItem: {{ ((($values.config).rules).includeRootItem) | default "" | quote }}         # include only these items at root folder level
-                fileStartsWith: {{ ((($values.config).rules).fileStartsWith) | default "" | quote }}          # (global) exclude files that start with these prefixes. Eg. "archive-" or "backup-"
-                folderStartsWith: {{ ((($values.config).rules).folderStartsWith) | default "" | quote }}        # (global) exclude folders that start with these prefixes. Eg. "archive-" or "backup-"
-                fileEndsWith: {{ ((($values.config).rules).fileEndsWith) | default "" | quote }}            # (global) exclude files that end with these suffixes. Eg. ".jpg" or ".txt"
-                folderEndsWith: {{ ((($values.config).rules).folderEndsWith) | default "" | quote }}          # (global) exclude folders that end with these suffixes. Eg. ".thumbnails" or ".git"
-                folderPath: {{ ((($values.config).rules).folderPath) | default "" | quote }}              # (global) exclude folders that match this path. Eg. "/path/to/folder" or "/path/to/folder/subfolder"
-                filePath: {{ ((($values.config).rules).filePath) | default "" | quote }}                # (global) exclude files that match this path. Eg. "/path/to/file.txt" or "/path/to/file.txt/subfile.txt"
-                fileName: {{ ((($values.config).rules).fileName) | default "" | quote }}                # (global) exclude files that match these names. Eg. "file.txt" or "test.csv"
-                folderName: {{ ((($values.config).rules).folderName) | default "" | quote }}              # (global) exclude folders that match these names. Eg. "folder" or "subfolder"
-                viewable: {{ ((($values.config).rules).viewable) | default false }}             # Enable viewing in UI but exclude from indexing
-            defaultUserScope: {{ (($values.config).defaultUserScope) | default "/" | quote }}             # default "/" should match folders under path
-            defaultEnabled: {{ (($values.config).defaultEnabled) | default true }}              # should be added as a default source for new users?
-            createUserDir: {{ (($values.config).createUserDir) | default false }}
+              - ignoreHidden: {{ $values.config.ignoreHidden | default false }}             # exclude hidden files and folders.
+                ignoreZeroSizeFolders: {{ $values.config.ignoreZeroSizeFolders | default false }}    # ignore folders with 0 size
+                neverWatchPath: {{ ($values.config.rules).neverWatchPath | default "" | quote }}          # index the folder in the first pass to get included in search, but never re-indexed.
+                includeRootItem: {{ ($values.config.rules).includeRootItem | default "" | quote }}         # include only these items at root folder level
+                fileStartsWith: {{ ($values.config.rules).fileStartsWith | default "" | quote }}          # (global) exclude files that start with these prefixes. Eg. "archive-" or "backup-"
+                folderStartsWith: {{ ($values.config.rules).folderStartsWith | default "" | quote }}        # (global) exclude folders that start with these prefixes. Eg. "archive-" or "backup-"
+                fileEndsWith: {{ ($values.config.rules).fileEndsWith | default "" | quote }}            # (global) exclude files that end with these suffixes. Eg. ".jpg" or ".txt"
+                folderEndsWith: {{ ($values.config.rules).folderEndsWith | default "" | quote }}          # (global) exclude folders that end with these suffixes. Eg. ".thumbnails" or ".git"
+                folderPath: {{ ($values.config.rules).folderPath | default "" | quote }}              # (global) exclude folders that match this path. Eg. "/path/to/folder" or "/path/to/folder/subfolder"
+                filePath: {{ ($values.config.rules).filePath | default "" | quote }}                # (global) exclude files that match this path. Eg. "/path/to/file.txt" or "/path/to/file.txt/subfile.txt"
+                fileName: {{ ($values.config.rules).fileName | default "" | quote }}                # (global) exclude files that match these names. Eg. "file.txt" or "test.csv"
+                folderName: {{ ($values.config.rules).folderName | default "" | quote }}              # (global) exclude folders that match these names. Eg. "folder" or "subfolder"
+                viewable: {{ ($values.config.rules).viewable | default false }}             # Enable viewing in UI but exclude from indexing
+            defaultUserScope: {{ $values.config.defaultUserScope | default "/" | quote }}             # default "/" should match folders under path
+            defaultEnabled: {{ $values.config.defaultEnabled | default true }}              # should be added as a default source for new users?
+            createUserDir: {{ $values.config.createUserDir | default false }}
         {{- end }}
     {{- else }}
       sources:
         - path: "/srv"
     {{- end }}
     {{- if .Values.ingress.enabled }}
-      externalUrl: "https://{{ .Values.ingress.host }}"                         # used by share links if set (eg. http://mydomain.com)
+      externalUrl: "{{ $ingressScheme }}://{{ .Values.ingress.host }}"                         # used by share links if set (eg. http://mydomain.com)
     {{- end }}
     {{- if .Values.volumes.cache.enabled }}
       cacheDir: "/mnt/tmp"                         # path to the cache directory, used for thumbnails and other cached files

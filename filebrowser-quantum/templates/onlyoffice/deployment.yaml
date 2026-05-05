@@ -1,0 +1,123 @@
+{{- if .Values.onlyoffice.deploy }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "filebrowser-quantum.fullname" . }}-oo-postgresql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "filebrowser-quantum.fullname" . }}-oo-postgresql
+  template:
+    metadata:
+      labels:
+        app: {{ include "filebrowser-quantum.fullname" . }}-oo-postgresql
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15
+          env:
+            - name: POSTGRES_DB
+              value: onlyoffice
+            - name: POSTGRES_USER
+              value: onlyoffice
+            - name: POSTGRES_HOST_AUTH_METHOD
+              value: trust
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - mountPath: /var/lib/postgresql
+              name: storage
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "onlyoffice"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: {{ include "filebrowser-quantum.fullname" . }}-oo-postgresql
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "filebrowser-quantum.fullname" . }}-oo-rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "filebrowser-quantum.fullname" . }}-oo-rabbitmq
+  template:
+    metadata:
+      labels:
+        app: {{ include "filebrowser-quantum.fullname" . }}-oo-rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3
+          ports:
+            - containerPort: 5672
+          readinessProbe:
+            exec:
+              command: ["rabbitmq-diagnostics", "status"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "filebrowser-quantum.fullname" . }}-oo-documentserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "filebrowser-quantum.fullname" . }}-oo-documentserver
+  template:
+    metadata:
+      labels:
+        app: {{ include "filebrowser-quantum.fullname" . }}-oo-documentserver
+    spec:
+      containers:
+        - name: documentserver
+          image: onlyoffice/documentserver
+          ports:
+            - containerPort: 80
+            - containerPort: 443
+          env:
+            - name: TRACKING_DISABLED
+              value: "true"
+            - name: DOCSERV_PUBLIC_HOST
+              value: {{ .Values.onlyoffice.ingress.host }}
+            - name: DOCSERV_HTTPS
+              value: "true"
+            - name: USE_UNAUTHORIZED_STORAGE
+              value: "true"
+            - name: DB_TYPE
+              value: postgres
+            - name: DB_HOST
+              value: {{ include "filebrowser-quantum.fullname" . }}-oo-postgresql
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: onlyoffice
+            - name: DB_USER
+              value: onlyoffice
+            - name: AMQP_URI
+              value: amqp://guest:guest@{{ include "filebrowser-quantum.fullname" . }}-oo-rabbitmq
+            - name: JWT_ENABLED
+              value: "true"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                {{- if .Values.onlyoffice.secretName }}
+                  name: {{ .Values.onlyoffice.secretName }}
+                {{- else if .Values.onlyoffice.secret }}
+                  name: {{ include "filebrowser-quantum.fullname" . }}-onlyoffice
+                {{- else }}
+                {{- fail "Either onlyoffice.secretName or onlyoffice.secret must be set" }}
+                {{- end }}
+                  key: onlyoffice-secret
+{{- end }}
